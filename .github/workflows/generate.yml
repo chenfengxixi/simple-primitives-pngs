@@ -1,0 +1,43 @@
+name: Generate simple primitives PNGs
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Blender
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y blender
+
+      - name: Show Blender version
+        run: blender --version
+
+      - name: Run Blender script to generate images and zip
+        run: |
+          blender --background --python generate_blender.py -- --out out.zip --per_class 20 --resolution 512 --bg white
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        with:
+          tag_name: simple-primitives-$(date +"%Y%m%d%H%M%S")
+          release_name: Simple Primitives PNGs
+          body: "Generated PNG dataset of simple 3D primitives (20 views per class)."
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Release Asset
+        uses: actions/upload-release-asset@v1
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./out.zip
+          asset_name: simple-primitives-pngs.zip
+          asset_content_type: application/zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
